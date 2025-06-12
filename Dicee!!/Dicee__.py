@@ -6,6 +6,8 @@ from tkinter import simpledialog
 import time
 
 
+
+
 # Створюємо головне вікно гри
 root = tk.Tk()
 root.title("Diceee!")
@@ -364,7 +366,6 @@ def start_classic_mode():
 
         canvas.bind("<Button-1>", lambda e: roll_dice())
 
-# Футбольний турнір — альтернатива класичній грі з двома командами та підрахунком очок
 def start_football_mode():
     # Очищаємо вікно
     for widget in root.winfo_children():
@@ -372,55 +373,97 @@ def start_football_mode():
 
     create_back_button(root)
 
-    # Назви та кольори
-    team1_name = simpledialog.askstring("Назва команди", "Введіть назву першої команди:", parent=root)
-    if team1_name is None or team1_name.strip() == "":
-        team1_name = "Команда А"
-    
-    team2_name = simpledialog.askstring("Назва команди", "Введіть назву другої команди:", parent=root)
-    if team2_name is None or team2_name.strip() == "":
-        team2_name = "Команда Б"
-    
-    # Вибір кольору для команд
-    color_window = tk.Toplevel(root)
-    color_window.title("Вибір кольорів форм")
-    color_window.geometry("400x200")
-    color_window.resizable(False, False)
-    color_window.grab_set()
-    
-    tk.Label(color_window, text="Виберіть колір форми для кожної команди", font=("Arial", 12)).pack(pady=10)
+    # Головний фрейм для всього вмісту
+    main_frame = tk.Frame(root, bg="#1e1e1e")
+    main_frame.pack(pady=20)
+
+    # Заголовок
+    tk.Label(main_frame, text="Футбольний Турнір", font=("Arial", 24, "bold"), 
+            bg="#1e1e1e", fg="white").grid(row=0, column=0, columnspan=4, pady=20)
+
+    # Налаштування команд
+    settings_frame = tk.Frame(main_frame, bg="#2e2e2e", padx=20, pady=20)
+    settings_frame.grid(row=1, column=0, columnspan=4, pady=10)
+
+    # Команда 1
+    tk.Label(settings_frame, text="Команда 1:", font=("Arial", 12), 
+            bg="#2e2e2e", fg="white").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    team1_entry = tk.Entry(settings_frame, font=("Arial", 12), width=15)
+    team1_entry.grid(row=0, column=1, padx=5, pady=5)
+    team1_entry.insert(0, "Команда А")
     
     team1_color = tk.StringVar(value="Red")
-    team2_color = tk.StringVar(value="Blue")
-    
-    color_frame = tk.Frame(color_window)
-    color_frame.pack(pady=10)
-    
-    tk.Label(color_frame, text=f"{team1_name}:").grid(row=0, column=0, padx=5)
-    team1_menu = tk.OptionMenu(color_frame, team1_color, *JERSEY_COLORS.keys())
-    team1_menu.grid(row=0, column=1, padx=5)
-    
-    tk.Label(color_frame, text=f"{team2_name}:").grid(row=1, column=0, padx=5)
-    team2_menu = tk.OptionMenu(color_frame, team2_color, *JERSEY_COLORS.keys())
-    team2_menu.grid(row=1, column=1, padx=5)
-    
-    def confirm_colors():
-        color_window.destroy()
-        start_football_game(team1_name, team2_name, team1_color.get(), team2_color.get())
-    
-    tk.Button(color_window, text="Підтвердити", command=confirm_colors).pack(pady=10)
+    tk.Label(settings_frame, text="Колір:", bg="#2e2e2e", fg="white").grid(row=0, column=2, padx=5, sticky="e")
+    team1_menu = tk.OptionMenu(settings_frame, team1_color, *JERSEY_COLORS.keys())
+    team1_menu.grid(row=0, column=3, padx=5, pady=5)
 
-def start_football_game(team1_name, team2_name, team1_color, team2_color):
+    # Команда 2
+    tk.Label(settings_frame, text="Команда 2:", font=("Arial", 12), 
+            bg="#2e2e2e", fg="white").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+    team2_entry = tk.Entry(settings_frame, font=("Arial", 12), width=15)
+    team2_entry.grid(row=1, column=1, padx=5, pady=5)
+    team2_entry.insert(0, "Команда Б")
+    
+    team2_color = tk.StringVar(value="Blue")
+    tk.Label(settings_frame, text="Колір:", bg="#2e2e2e", fg="white").grid(row=1, column=2, padx=5, sticky="e")
+    team2_menu = tk.OptionMenu(settings_frame, team2_color, *JERSEY_COLORS.keys())
+    team2_menu.grid(row=1, column=3, padx=5, pady=5)
+
+    # Кількість раундів
+    tk.Label(settings_frame, text="Кількість раундів:", font=("Arial", 12), 
+            bg="#2e2e2e", fg="white").grid(row=2, column=0, padx=5, pady=10, sticky="e")
+    rounds_var = tk.StringVar(value="10")
+    rounds_entry = tk.Entry(settings_frame, font=("Arial", 12), width=5, textvariable=rounds_var)
+    rounds_entry.grid(row=2, column=1, padx=5, pady=10, sticky="w")
+
+    # Кнопка початку гри
+    start_btn = styled_button(main_frame, "Почати гру", 
+                            lambda: validate_and_start(
+                                team1_entry.get(), 
+                                team2_entry.get(), 
+                                team1_color.get(), 
+                                team2_color.get(),
+                                rounds_var.get()
+                            ), 
+                            bg="#4CAF50", font_size=16, width=20, height=2)
+    start_btn.grid(row=2, column=0, columnspan=4, pady=20)
+
+def validate_and_start(team1_name, team2_name, team1_color, team2_color, rounds_str):
+    try:
+        total_rounds = int(rounds_str)
+        if total_rounds < 1:
+            raise ValueError
+    except ValueError:
+        tk.messagebox.showerror("Помилка", "Будь ласка, введіть коректну кількість раундів (ціле число більше 0)")
+        return
+    
+    if not team1_name.strip():
+        team1_name = "Команда А"
+    if not team2_name.strip():
+        team2_name = "Команда Б"
+    
+    start_football_game(team1_name, team2_name, team1_color, team2_color, total_rounds)
+
+def start_football_game(team1_name, team2_name, team1_color, team2_color, total_rounds):
+    # Очищаємо вікно
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    create_back_button(root)
+
     # Змінні для гри
     teams = [team1_name, team2_name]  # Назви команд
     team_colors = [JERSEY_COLORS[team1_color], JERSEY_COLORS[team2_color]]  # Кольори команд
     team_scores = [0, 0]  # Рахунки обох команд
-    total_rounds = 10  # Кількість раундів
     round_number = 1
     game_active = True
 
+    # Головний фрейм для гри
+    game_frame = tk.Frame(root, bg="#1e1e1e")
+    game_frame.pack(pady=20)
+
     # Показуємо назви команд та їхні рахунки
-    scores_frame = tk.Frame(root, bg="#1e1e1e")
+    scores_frame = tk.Frame(game_frame, bg="#1e1e1e")
     scores_frame.pack(pady=20)
     
     team1_label = tk.Label(scores_frame, text=f"{teams[0]}: 0", font=("Arial", 20, "bold"), 
@@ -435,15 +478,15 @@ def start_football_game(team1_name, team2_name, team1_color, team2_color):
     team2_label.pack(side=tk.LEFT)
 
     # Показуємо зображення кубика (початково 1)
-    dice_label = tk.Label(root, image=dice_images[0], bg="#1e1e1e")
+    dice_label = tk.Label(game_frame, image=dice_images[0], bg="#1e1e1e")
     dice_label.pack()
 
     # Статус — хто зараз кидає кубик
-    status_label = tk.Label(root, text=f"Раунд {round_number}. Хід {teams[round_number % 2]}", 
+    status_label = tk.Label(game_frame, text=f"Раунд {round_number}/{total_rounds}. Хід {teams[round_number % 2]}", 
                            font=("Arial", 18, "bold"), bg="#1e1e1e", fg="#FFD700")
     status_label.pack(pady=10)
 
-    btn_frame = tk.Frame(root, bg="#1e1e1e")
+    btn_frame = tk.Frame(game_frame, bg="#1e1e1e")
     btn_frame.pack(pady=20)
 
     def update_team_highlight():
@@ -486,20 +529,28 @@ def start_football_game(team1_name, team2_name, team1_color, team2_color):
         else:
             round_number += 1
             next_team = teams[(round_number - 1) % 2]
-            status_label.config(text=f"Раунд {round_number}. Хід {next_team}")
+            status_label.config(text=f"Раунд {round_number}/{total_rounds}. Хід {next_team}")
             update_team_highlight() 
 
-    # Кнопки "Кинути кубик", "Реванш" та "Головне меню"
     def finish_football_game():
-        roll_button.config(state=tk.DISABLED)
+        nonlocal game_active
+        game_active = False
+        
+        # Фрейм для кнопок після гри
+        end_btn_frame = tk.Frame(game_frame, bg="#1e1e1e")
+        end_btn_frame.pack(pady=20)
 
-        rematch_btn = styled_button(btn_frame, "Реванш", lambda: start_football_mode(), bg="#607d8b", font_size=14, width=15, height=2)
-        rematch_btn.pack(side=tk.LEFT, padx=10)
+        styled_button(end_btn_frame, "Реванш", 
+                    lambda: start_football_game(team1_name, team2_name, team1_color, team2_color, total_rounds), 
+                    bg="#607d8b", font_size=14, width=15, height=2).pack(side=tk.LEFT, padx=10)
+        
+        styled_button(end_btn_frame, "Нова гра", start_football_mode, 
+                    bg="#2196F3", font_size=14, width=15, height=2).pack(side=tk.LEFT, padx=10)
+        
+        styled_button(end_btn_frame, "Головне меню", show_main_menu, 
+                    bg="#f44336", font_size=14, width=15, height=2).pack(side=tk.LEFT, padx=10)
 
-        newgame_btn = styled_button(btn_frame, "Головне меню", show_main_menu, bg="#f44336", font_size=14, width=15, height=2)
-        newgame_btn.pack(side=tk.LEFT, padx=10)
-
-    roll_button = styled_button(root, "Кинути кубик", roll_football, bg="#4CAF50", font_size=18, width=20, height=2)
+    roll_button = styled_button(game_frame, "Кинути кубик", roll_football, bg="#4CAF50", font_size=18, width=20, height=2)
     roll_button.pack(pady=10)
 
 # Запускаємо спочатку превью з логотипом, потім головне меню
